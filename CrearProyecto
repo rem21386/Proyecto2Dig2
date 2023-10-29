@@ -64,6 +64,24 @@ void LCD_Print(String text, int x, int y, int fontSize, int color, int backgroun
 void LCD_Bitmap(unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned char bitmap[]);
 void LCD_Sprite(int x, int y, int width, int height, unsigned char bitmap[],int columns, int index, char flip, char offset);
 
+const int buzzerPin = PF_1;
+
+// notas en la primera melodía:
+int melody1[] = {
+  NOTE_C4, NOTE_G3,NOTE_G3, NOTE_A3, NOTE_G3};
+
+// notas en la segunda melodía:
+int melody2[] = {
+  NOTE_C3, NOTE_G3,NOTE_F3, NOTE_E3, NOTE_D3};
+
+// note durations: 4 = quarter note, 8 = eighth note, etc.:
+int noteDurations1[] = {
+  4, 8, 8, 4, 4};
+
+// note durations: 4 = quarter note, 8 = eighth note, etc.:
+int noteDurations2[] = {
+  8, 8, 4, 4, 4};
+
 File root;
 
 File myFile;
@@ -136,6 +154,18 @@ void loop() {
 
   if (digitalRead(sw1Pin) == LOW) {
     // Notas de la melodía:
+    for (int thisNote2 = 0; thisNote2 < 5; thisNote2++) {
+
+      // Se calcula la duración de las notas
+      int noteDuration = 1000/noteDurations2[thisNote2];
+      tone(buzzerPin, melody2[thisNote2],noteDuration);
+
+      // Pausa entre las notas para que se entiendan
+      int pauseBetweenNotes = noteDuration * 1.30;
+      delay(pauseBetweenNotes);
+      // parar la nota
+      noTone(buzzerPin);
+    }
     // Abrir el archivo donde están las temperaturas
     myFile = SD.open("test.txt", FILE_WRITE);
 
@@ -187,6 +217,20 @@ void loop() {
     LCD_Bitmap(20, 60, 75, 68, Dartrix); 
     String normal = "Que Buen Clima!";
     LCD_Print(normal, 10, 158, 2, 0xffff, 0x00);
+    }
+    
+    // Notas de la melodía
+    for (int thisNote = 0; thisNote < 5; thisNote++) {
+
+      // calcular la duración
+      int noteDuration = 1000/noteDurations1[thisNote];
+      tone(buzzerPin, melody1[thisNote],noteDuration);
+
+      // Poner tiempo entre ellas
+      int pauseBetweenNotes = noteDuration * 1.30;
+      delay(pauseBetweenNotes);
+      // Parar la nota
+      noTone(buzzerPin);
     }
   delay(250);  
   }
