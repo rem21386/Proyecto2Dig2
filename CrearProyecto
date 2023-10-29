@@ -10,15 +10,38 @@ volatile float tempC;
 //Pin de señal del sensor
 #define PIN_LM35       34 // Pin conectado al sensor
 
+int senal;
+
 void setup() {
     pinMode(PIN_LM35, INPUT);
+
+    //Empieza la comunicación serial en el puerto 2 con la Tiva-C
+    Serial2.begin(115200);
+
+    //Empieza la comunicación serial en el puerto 0 con la computadora
+    Serial.begin(115200);
 }
 
 void loop() {
-//Leer el valor de ADC del sensor
+if (Serial2.available() > 0) {
+    char comand = Serial2.read();
+    if (comand == 'x'){
+    //Leer el valor de ADC del sensor
     int adcVal = analogRead(PIN_LM35);
     //Convertir el valor a voltaje
     float milliVolt = adcVal * (ADC_VREF_mV / ADC_RESOLUTION);
     // convertiir el voltaje a temperatura en °C
     tempC = milliVolt / 10;
+    // Imprimir la temperatura en el monitor serial.
+    Serial.print("Temperature: ");
+    Serial.print(tempC);
+    Serial.print(" °C ");
+
+    //Se manda el valor de temperatura cómo un string a la tiva C
+    char buffer[8];
+    dtostrf(tempC, 4, 2, buffer); //Se manda con 2 digitos y dos decimales
+    Serial2.print(buffer);
+    delay(250);
+    }
+  }
 }
