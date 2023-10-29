@@ -6,6 +6,7 @@
  */
 //***************************************************************************************************************************************
 #include "pitches.h"
+#include <SD.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <TM4C123GH6PM.h>
@@ -40,6 +41,7 @@
 #define LCD_CS PA_3
 
 //Pines asignados a los dos botones de la Tiva-C
+const int sw1Pin = PF_4; // SW1 conectado a GPIO pin PF4
 const int sw2Pin = PF_0; // SW2 conectado a GPIO pin PF0
 
 String tempc;
@@ -62,6 +64,10 @@ void LCD_Print(String text, int x, int y, int fontSize, int color, int backgroun
 void LCD_Bitmap(unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned char bitmap[]);
 void LCD_Sprite(int x, int y, int width, int height, unsigned char bitmap[],int columns, int index, char flip, char offset);
 
+File root;
+
+File myFile;
+
 //*****************************************************************************
 // Setup
 //*****************************************************************************
@@ -70,6 +76,7 @@ void setup() {
   pinMode(buzzerPin, OUTPUT);
 
   //Se definen los pines de botón cómo input con pullup interno
+  pinMode(sw1Pin, INPUT_PULLUP);
   pinMode(sw2Pin, INPUT_PULLUP);
 
   //Se inicia la comunicación serial con el ESP32
@@ -78,6 +85,24 @@ void setup() {
 
   SysCtlClockSet(SYSCTL_SYSDIV_2_5|SYSCTL_USE_PLL|SYSCTL_OSC_MAIN|SYSCTL_XTAL_16MHZ);
   SPI.setModule(0);
+
+  Serial.print("Initializing SD card...");
+  // Se define el pin de la SD cómo Output
+  pinMode(PE_3, OUTPUT);
+
+  //Revisar si está disponible una SD
+  if (!SD.begin(PE_3)) {
+    Serial.println("initialization failed!");
+    return;
+  }
+  Serial.println("initialization done.");
+
+  //Mostrar que archivos hay guardados en la SD
+  root = SD.open("/");
+
+  printDirectory(root, 0);
+
+  Serial.println("done!");
 
   Serial.println("Inicio");
   LCD_Init();
@@ -107,6 +132,28 @@ void loop() {
   //Revisión de si se presionan los botones
   if (digitalRead(sw2Pin) == LOW) {
     Serial2.println("x");
+  }
+
+  if (digitalRead(sw1Pin) == LOW) {
+    // Notas de la melodía:
+    // Abrir el archivo donde están las temperaturas
+    myFile = SD.open("test.txt", FILE_WRITE);
+
+    // Escribir la temperatura en el
+    if (myFile) {
+      Serial.print("Escribiendo en test.txt...");
+      myFile.println(temp);
+      // close the file:
+      myFile.close();
+      Serial.println("done.");
+      String guardado = "Guardado!";
+      LCD_Print(guardado, 10, 178, 2, 0xffff, 0x00);
+      
+    } else {
+    // Decir que hubo un error abriéndolo
+    Serial.println("error opening test.txt");
+  }
+  delay(250);
   }
 
   //Se revisa si hay comunicación serial
@@ -140,7 +187,6 @@ void loop() {
     LCD_Bitmap(20, 60, 75, 68, Dartrix); 
     String normal = "Que Buen Clima!";
     LCD_Print(normal, 10, 158, 2, 0xffff, 0x00);
-    }
     }
   delay(250);  
   }
@@ -459,6 +505,7 @@ void LCD_Sprite(int x, int y, int width, int height, unsigned char bitmap[],int 
   digitalWrite(LCD_CS, HIGH);
 }
 
+//Función Para convertir de un String a un Float
 float stringToFloat(String str) {
   bool isNegative = false;
   int index = 0;
@@ -498,3 +545,27 @@ float stringToFloat(String str) {
   return result;
 }
 
+//Funcion para mostrar archivos de la SD
+void printDirectory(File dir, int numTabs) {
+   while(true) {
+     
+     File entry =  dir.openNextFile();
+     if (! entry) {
+       // no more files
+       break;
+     }
+     for (uint8_t i=0; i<numTabs; i++) {
+       Serial.print('\t');
+     }
+     Serial.print(entry.name());
+     if (entry.isDirectory()) {
+       Serial.println("/");
+       printDirectory(entry, numTabs+1);
+     } else {
+       // files have sizes, directories do not
+       Serial.print("\t\t");
+       Serial.println(entry.size(), DEC);
+     }
+     entry.close();
+   }
+}
