@@ -1,1 +1,24 @@
-//Código de cada uno en branches
+#include <Arduino.h>
+
+//Variable float para registrar la temperatura
+volatile float tempC;
+
+//Voltaje de referencia para el sensor de temperatura
+#define ADC_VREF_mV    5000.0 // en millivolts
+//Resolución del ADC
+#define ADC_RESOLUTION 4096.0
+//Pin de señal del sensor
+#define PIN_LM35       34 // Pin conectado al sensor
+
+void setup() {
+    pinMode(PIN_LM35, INPUT);
+}
+
+void loop() {
+//Leer el valor de ADC del sensor
+    int adcVal = analogRead(PIN_LM35);
+    //Convertir el valor a voltaje
+    float milliVolt = adcVal * (ADC_VREF_mV / ADC_RESOLUTION);
+    // convertiir el voltaje a temperatura en °C
+    tempC = milliVolt / 10;
+}
